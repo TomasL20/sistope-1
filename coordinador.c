@@ -5,11 +5,11 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 typedef struct mensaje{
-    char* secuencia; // listo
-    char* nombreArchivo; //listo
-    int identificador;   //listo
-    int lineas; // falta
-    int  posCursor;  // listo
+    char* secuencia;
+    char* nombreArchivo;
+    int identificador;
+    int lineas;
+    int  posCursor;
 }mensaje;
 int main(int argc, char** argv){ // argc indica cantidad de argumentos y argv es un arreglo de caracteres que tiene los parametros de entrada por consola 
     char* nameFile = NULL;
@@ -131,9 +131,8 @@ int main(int argc, char** argv){ // argc indica cantidad de argumentos y argv es
 	   printf("la cantidad de lineas que tengo que leer es: %d\n",new->lineas);
 	   printf("el nombre del archivo que tengo que leer es: %s\n", new->nombreArchivo);
 	   printf("tengo que leer desde la posicion %d del cursor\n", new->posCursor);
-       execv(argumentos[0], argumentos); // ejecuto otro programa  --- no me lo tomaaaaa!!!!!!
+       execv(argumentos[0], argumentos); // ejecuto otro programa
 	}
-
 	else{
         // lógica del padre
         // espero que terminen los hijos
