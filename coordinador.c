@@ -4,13 +4,17 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <string.h>
+
+#define LECTURA 0
+#define ESCRITURA 1
+
 typedef struct mensaje{
-    char* secuencia;
-    char* nombreArchivo;
     int identificador;
     int lineas;
     int  posCursor;
 }mensaje;
+
 int main(int argc, char** argv){ // argc indica cantidad de argumentos y argv es un arreglo de caracteres que tiene los parametros de entrada por consola 
     char* nameFile = NULL;
     int qProcesses, qLines;
@@ -60,6 +64,17 @@ int main(int argc, char** argv){ // argc indica cantidad de argumentos y argv es
             abort();
         }
     }
+    // abrimos el archivo para leer
+    FILE *fp = fopen(nameFile, "r");
+    // obtengo longitud de la linea del archivo
+    size_t len = 0;
+    char* aux;
+    getline(&aux, &len, fp); // lee una linea completa
+    long count = ftell(fp); // obtengo cantidad de caracteres de la linea leída + salto de linea
+    rewind(fp); // vuelvo el cursor al inicio
+    // lineas que lee cada proceso hijo
+    int cantidadLineas = qLines / qProcesses;
+
     int numProcess;
     // CREAR MULTIPLES PIPES
     // creamos una matriz donde cada fila será un pipe de un proceso hijo 
@@ -72,75 +87,55 @@ int main(int argc, char** argv){ // argc indica cantidad de argumentos y argv es
     for (numProcess = 0; numProcess < qProcesses; numProcess++){
         pipe(pipes[numProcess]);
     }
-    // abrimos el archivo para leer
-    FILE *fp = fopen(nameFile, "r");
-    // obtengo longitud de la linea del archivo
-    size_t len = 0;
-    char* aux;
-    getline(&aux, &len, fp); // lee una linea completa
-    long count = ftell(fp); // obtengo cantidad de caracteres de la linea leída + salto de linea
-    rewind(fp); // vuelvo el cursor al inicio
-    // lineas que lee cada proceso hijo
-    int cantidadLineas = qLines / qProcesses;
-    // AHORA A CREAR LOS PROCESOS HIJOS
+    // CREAR MULTIPLES HIJOS
     int status;
-	pid_t pid; // arreglo de pids
-	mensaje *new = (mensaje*)malloc(sizeof(mensaje));
-	new->posCursor = 0;  
-	for (numProcess = 0; numProcess < qProcesses ; numProcess++) {
-        // le doy los argumentos al proceso hijo por el pipe  
-        new->secuencia = chain;
-        new->nombreArchivo = nameFile;
+	pid_t pid;
+
+    mensaje *new = (mensaje*)malloc(sizeof(mensaje));
+
+    // parametros por argv
+    int x = strlen(nameFile); // cantidad de carácteres del archivo de entrada
+    int y = strlen(chain); // cantidad de carácteres de la cadena
+    char nameF[x];
+    sprintf(nameF, "%d", x); // guardo el num como string
+    char nameS[y];
+    sprintf(nameS, "%d", y);
+	
+    new->posCursor = 0;
+
+	for (numProcess = 0; numProcess < qProcesses ; numProcess++){
         new->identificador = numProcess;
         new->lineas = cantidadLineas;
         new->posCursor = numProcess*(cantidadLineas*count);
-        // si las lineas no se repiten equitativamente, el último hijo las lee 
+
         if (qLines % qProcesses != 0 && numProcess == qProcesses-1){
             new->lineas = cantidadLineas + (qLines%qProcesses);
-        }  
-        write(pipes[numProcess][1], new, sizeof(mensaje)); // escribo en pipe
-
-
-        pid = fork();
-        if (pid == 0) {		// padre crea a siguiente hijo 		
-			break;         
         }
-        // el padre no lee así que cerramos la entrada de lectura de los pipe creados
-        close(pipes[numProcess][0]);
+
+        mensaje *aviso = (mensaje*)malloc(sizeof(mensaje));
+        pid = fork();
+        
+        if (pid > 0) {
+            close(pipes[numProcess][LECTURA]);
+            write(pipes[numProcess][ESCRITURA], new, sizeof(mensaje)); // escribo en pipe  
+            write(pipes[numProcess][ESCRITURA], nameFile, sizeof(char)*x);
+            write(pipes[numProcess][ESCRITURA], chain, sizeof(char)*y);       
+        }
+        
+        else{
+            close(pipes[numProcess][ESCRITURA]);
+            dup2(pipes[numProcess][LECTURA], STDIN_FILENO); // copio lo que me envía el padre
+            char* argumentos[4] = {"comparador", nameF, nameS, NULL};
+            execv(argumentos[0], argumentos); // ejecuto otro programa
+        }
         fseek(fp, cantidadLineas*count, SEEK_SET); // muevo el cursor a la siguiente linea que le correspondo al hijo siguiente
 	}
-    if (pid == 0) { //arreglar
-       // Lógica del Hijo 
-       // el hijo lee por lo tanto cerramos la entrada de escritura , además también cerramos las copias de los pipe de los otros hijos
-       for (int i = 0; i < qProcesses; i++){
-           for (int j = 0; j < 2; j++){
-               if ( i != new->identificador){ // si no es el pipe del proceso hijo actual entonces cerramos la entrada de escritura y lectura  
-                   close(pipes[i][j]); 
-               }
-               else{
-                   if (j == 1){ // cierro la escritura del hijo actual 
-                       close(pipes[i][j]);
-                   }      
-               }
-           }
-       }
-       dup2(pipes[new->identificador][0], STDIN_FILENO); // copio lo que me envía el padre
-       char* argumentos[2] = {"comparador", NULL};
-	   printf("Wa ha ha soy el hijo: %d\n",new->identificador);
-	   printf("la cadena que tengo que leer es: %s\n", new->secuencia);
-	   printf("la cantidad de lineas que tengo que leer es: %d\n",new->lineas);
-	   printf("el nombre del archivo que tengo que leer es: %s\n", new->nombreArchivo);
-	   printf("tengo que leer desde la posicion %d del cursor\n", new->posCursor);
-       execv(argumentos[0], argumentos); // ejecuto otro programa
-	}
-	else{
-        // lógica del padre
-        // espero que terminen los hijos
-        for (numProcess = 0; numProcess < qProcesses; numProcess++){
-			while ((pid=waitpid(-1,&status,0))!=-1){
-				//printf("Process %d terminated\n",pid);
-			}
+    // lógica del padre
+    // espero que terminen los hijos
+    for (numProcess = 0; numProcess < qProcesses; numProcess++){
+		while ((pid=waitpid(-1,&status,0))!=-1){
+			//printf("Process %d terminated\n",pid);
 		}
-    }
+	}
     return 0;
 }
