@@ -134,8 +134,45 @@ int main(int argc, char** argv){ // argc indica cantidad de argumentos y argv es
     fclose(fp);
     for (numProcess = 0; numProcess < qProcesses; numProcess++){
 		while ((pid=waitpid(-1,&status,0))!=-1){
-			//printf("Process %d terminated\n",pid);
 		}
 	}
+
+    // genero el nombre de archivo final
+    char* salida = (char*)malloc(sizeof(char)*(y+7));
+    strcat(salida, "rc_");
+    strcat(salida, chain);
+    strcat(salida, ".txt");
+    FILE* fpout = fopen(salida, "w");
+    int n = sizeof(qProcesses)/sizeof(int);
+    printf("%s\n", salida);
+    // leo los resultados parciales de los archivos generados por los hijos
+    for (numProcess = 0; numProcess < qProcesses; numProcess++){
+        // genero el nombre del archivo de salida del proceso correspondiente para leer  
+        int n = sizeof(numProcess)/sizeof(int); // cantidad de digitos del identificador
+        int qCaracteres = 8 + y + n; // cantidad de caracteres del archivo de salida 
+        char *entrada = (char*)malloc(sizeof(char)*qCaracteres); // asigno memoria al string que tendrá el nombre del archivo de salida 
+        char *number = (char*)malloc(sizeof(char)*n); // asigno memoria al string que tendrá el identificador del proceso
+        sprintf(number, "%d", numProcess);  
+        strcat(entrada, "rp_");
+        strcat(entrada, chain);
+        strcat(entrada, "_");
+        strcat(entrada, number);
+        strcat(entrada, ".txt");
+        printf("%s\n", entrada);
+        
+        char* contenedor = (char*)malloc(sizeof(char)*(count+6)*cantidadLineas); // almacenará la información del archivo que se lee
+        FILE* fpin = fopen(entrada, "r");
+        if (qLines % qProcesses != 0 && numProcess == qProcesses-1){
+            cantidadLineas = cantidadLineas + (qLines%qProcesses);
+            contenedor = (char*)realloc(contenedor,(count+6)*cantidadLineas);
+            fread(contenedor,sizeof(char),(count+6)*cantidadLineas,fpin);
+            fwrite(contenedor,sizeof(char),(count+6)*cantidadLineas,fpout);
+        }
+        else{
+            fread(contenedor,sizeof(char),(count+6)*cantidadLineas,fpin);
+            fwrite(contenedor,sizeof(char),(count+6)*cantidadLineas,fpout);
+        }
+	}
+    fclose(fpout);
     return 0;
 }
