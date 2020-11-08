@@ -82,11 +82,10 @@ int main(int argc, char** argv){ // argc indica cantidad de argumentos y argv es
     for (numProcess = 0; numProcess < qProcesses; numProcess++){
         // 0 para leer y 1 para escribir
         pipes[numProcess] = (int*)malloc(sizeof(int)*2);
-    }
-    // inicializamos los pipes
-    for (numProcess = 0; numProcess < qProcesses; numProcess++){
+        // inicializamos los pipes
         pipe(pipes[numProcess]);
     }
+    
     // CREAR MULTIPLES HIJOS
     int status;
 	pid_t pid;
@@ -132,6 +131,7 @@ int main(int argc, char** argv){ // argc indica cantidad de argumentos y argv es
 	}
     // lógica del padre
     // espero que terminen los hijos
+    fclose(fp);
     for (numProcess = 0; numProcess < qProcesses; numProcess++){
 		while ((pid=waitpid(-1,&status,0))!=-1){
 			//printf("Process %d terminated\n",pid);
