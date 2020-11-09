@@ -132,7 +132,6 @@ int main(int argc, char** argv){ // argc indica cantidad de argumentos y argv es
     sprintf(nameF, "%d", x); // guardo el num como string
     char nameS[y];
     sprintf(nameS, "%d", y);
-    mensaje *aviso = (mensaje*)malloc(sizeof(mensaje));
     new->posCursor = 0;
 	for (numProcess = 0; numProcess < qProcesses ; numProcess++){
         new->identificador = numProcess;
@@ -163,6 +162,8 @@ int main(int argc, char** argv){ // argc indica cantidad de argumentos y argv es
 		while ((pid=waitpid(-1,&status,0))!=-1){
 		}
 	}
+    free(new);
+    free(pipes);
     // genero el nombre de archivo final
     char* salida = (char*)malloc(sizeof(char)*(y+7));
     strcat(salida, "rc_");
@@ -183,7 +184,7 @@ int main(int argc, char** argv){ // argc indica cantidad de argumentos y argv es
         strcat(entrada, "_");
         strcat(entrada, number);
         strcat(entrada, ".txt");
-        char* contenedor = (char*)malloc(sizeof(char)*(count+6)*cantidadLineas); // almacenará la información del archivo que se lee
+        char* contenedor = (char*)calloc((count+6)*cantidadLineas, sizeof(char)); // almacenará la información del archivo que se lee
         FILE* fpin = fopen(entrada, "r");
         if (qLines % qProcesses != 0 && numProcess == qProcesses-1){
             cantidadLineas = cantidadLineas + (qLines%qProcesses);
@@ -197,6 +198,9 @@ int main(int argc, char** argv){ // argc indica cantidad de argumentos y argv es
             fwrite(contenedor,sizeof(char),(count+6)*cantidadLineas,fpout);
             h = h + (count+6)*cantidadLineas;
         }
+        free(entrada);
+        free(number);
+        free(contenedor);
 	}
     fclose(fpout);
     // FLAGS 
@@ -207,5 +211,7 @@ int main(int argc, char** argv){ // argc indica cantidad de argumentos y argv es
         printf("El resultado final es\n%s",dContenedor);
         fclose(fpout);
     }
+    free(dContenedor);
+    free(salida);
     return 0;
 }
