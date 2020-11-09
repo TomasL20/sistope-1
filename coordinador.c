@@ -20,61 +20,26 @@ int main(int argc, char** argv){ // argc indica cantidad de argumentos y argv es
     int qProcesses, qLines; // cantidad de procesos a generar y cantidad de lineas a leer del archivo de entrada 
     char* chain = NULL; // string que contiene la secuencia a buscar
     int dflag = 0; // bandera que indica si se muestra el resultado final por pantalla
-    int c, largo, i; // variables auxiliares 
+    int c; // variables auxiliares 
     opterr = 0;
     while ((c = getopt (argc, argv, "i:n:c:p:d")) != -1){ //getopt guarda los argumentos ingresados por consola y los guarda en c hasta que no quede ninguno
         switch (c){       
         case 'i':
-            nameFile = optarg; // comprobar que el archivo de entrada tenga extensión .txt
-            largo = strlen(nameFile);
-            i = largo -4;
-            int j = 0;
-            char extension[4] = ".txt";
-            while (i < largo){
-                if (extension[j] == nameFile[i]){
-                    i++;
-                    j++;
-                }
-                else{
-                    fprintf(stderr, "el archivo de entrada no tiene la extension .txt");
-                    return 1;
-                }
-            }        
+            nameFile = optarg; // comprobar que el archivo de entrada tenga extensión .txt   
             break;
 
         case 'n':
             // convierto la entrada recibida como string a entero // verificar que sea un numero mayor a 0
-            if ((qProcesses = atoi(optarg)) > 0){
-                break;
-            }
-            else{
-                fprintf(stderr, "la opcion n debe ser un entero positivo\n");
-                return 1;
-            }
+            qProcesses = atoi(optarg);
+            break;
 
         case 'c':
             // convierto la entrada recibida como string a entero // verificar que sea un numero mayor a 0
-            if ((qLines = atoi(optarg)) > 0){ 
-                break;
-            }
-            else{
-                fprintf(stderr, "la opcion c debe ser un entero positivo\n");
-                return 1;
-            }
+            qLines = atoi(optarg); 
+            break;
 
         case 'p':
             chain = optarg; // comprobar que la secuencia sea válida 
-            largo = strlen(chain);
-            i = 0;
-            while (i < largo){        
-                if (chain[i] == 'A' || chain[i] == 'T' || chain[i] == 'C' || chain[i] == 'G'){
-                    i++;
-                }
-                else{
-                    fprintf(stderr, "la secuencia contiene caracteres invalidos, las bases nitrogenadas son: A, T, C y G\n");
-                    return 1;
-                }
-            }
             break;
 
         case 'd':
@@ -99,6 +64,7 @@ int main(int argc, char** argv){ // argc indica cantidad de argumentos y argv es
             abort();
         }
     }
+
     // abrimos el archivo para leer
     FILE *fp = fopen(nameFile, "r");
     if (!fp){
