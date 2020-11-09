@@ -136,6 +136,7 @@ int main(int argc, char** argv){ // argc indica cantidad de argumentos y argv es
     char nameS[y];
     sprintf(nameS, "%d", y);
 
+    mensaje *aviso = (mensaje*)malloc(sizeof(mensaje));
     new->posCursor = 0;
 	for (numProcess = 0; numProcess < qProcesses ; numProcess++){
         new->identificador = numProcess;

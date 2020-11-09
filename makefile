@@ -2,8 +2,8 @@
 # PROFESOR : CRISTOBAL ACOSTA
 # AYUDANTE : MARCELA RIVERA
 
-comparador_out= hijo
-coordinador_out= salida
+comparador_out= comparador
+coordinador_out= coordinador
 
 comparador_headers =
 comparador_source  = $(comparador_headers:.h=.c) comparador.c
