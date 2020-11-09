@@ -20,26 +20,61 @@ int main(int argc, char** argv){ // argc indica cantidad de argumentos y argv es
     int qProcesses, qLines; // cantidad de procesos a generar y cantidad de lineas a leer del archivo de entrada 
     char* chain = NULL; // string que contiene la secuencia a buscar
     int dflag = 0; // bandera que indica si se muestra el resultado final por pantalla
-    int c; // variables auxiliares 
+    int c, largo, i; // variables auxiliares 
     opterr = 0;
-    while ((c = getopt (argc, argv, "i:n:c:p:d")) != -1){ //getopt guarda los argumentos ingresados por consola y los guarda en c hasta que no quede ninguno
+      while ((c = getopt (argc, argv, "i:n:c:p:d")) != -1){ //getopt guarda los argumentos ingresados por consola y los guarda en c hasta que no quede ninguno
         switch (c){       
         case 'i':
-            nameFile = optarg; // comprobar que el archivo de entrada tenga extensión .txt   
+            nameFile = optarg; // comprobar que el archivo de entrada tenga extensión .txt
+            largo = strlen(nameFile);
+            i = largo -4;
+            int j = 0;
+            char extension[4] = ".txt";
+            while (i < largo){
+                if (extension[j] == nameFile[i]){
+                    i++;
+                    j++;
+                }
+                else{
+                    fprintf(stderr, "el archivo de entrada no tiene la extension .txt");
+                    return 1;
+                }
+            }        
             break;
 
         case 'n':
             // convierto la entrada recibida como string a entero // verificar que sea un numero mayor a 0
-            qProcesses = atoi(optarg);
-            break;
+            if ((qProcesses = atoi(optarg)) > 0){
+                break;
+            }
+            else{
+                fprintf(stderr, "la opcion n debe ser un entero positivo\n");
+                return 1;
+            }
 
         case 'c':
             // convierto la entrada recibida como string a entero // verificar que sea un numero mayor a 0
-            qLines = atoi(optarg); 
-            break;
+            if ((qLines = atoi(optarg)) > 0){ 
+                break;
+            }
+            else{
+                fprintf(stderr, "la opcion c debe ser un entero positivo\n");
+                return 1;
+            }
 
         case 'p':
             chain = optarg; // comprobar que la secuencia sea válida 
+            largo = strlen(chain);
+            i = 0;
+            while (i < largo){        
+                if (chain[i] == 'A' || chain[i] == 'T' || chain[i] == 'C' || chain[i] == 'G'){
+                    i++;
+                }
+                else{
+                    fprintf(stderr, "la secuencia contiene caracteres invalidos, las bases nitrogenadas son: A, T, C y G\n");
+                    return 1;
+                }
+            }
             break;
 
         case 'd':
@@ -64,7 +99,6 @@ int main(int argc, char** argv){ // argc indica cantidad de argumentos y argv es
             abort();
         }
     }
-
     // abrimos el archivo para leer
     FILE *fp = fopen(nameFile, "r");
     if (!fp){
@@ -73,7 +107,7 @@ int main(int argc, char** argv){ // argc indica cantidad de argumentos y argv es
     }
     // obtengo longitud de la linea del archivo
     size_t len = 0;
-    char* aux;
+    char* aux = NULL;
     getline(&aux, &len, fp); // lee una linea completa
     long count = ftell(fp); // obtengo cantidad de caracteres de la linea leída + salto de linea
     rewind(fp); // vuelvo el cursor al inicio
@@ -84,16 +118,13 @@ int main(int argc, char** argv){ // argc indica cantidad de argumentos y argv es
     // creamos una matriz donde cada fila será un pipe de un proceso hijo 
     int** pipes = (int**)malloc(sizeof(int*)*qProcesses);
     for (numProcess = 0; numProcess < qProcesses; numProcess++){
-        // 0 para leer y 1 para escribir
         pipes[numProcess] = (int*)malloc(sizeof(int)*2);
-        // inicializamos los pipes
-        pipe(pipes[numProcess]);
+        pipe(pipes[numProcess]); // inicializamos los pipes
     }
     // CREAR MULTIPLES HIJOS
     int status;
 	pid_t pid;
     mensaje *new = (mensaje*)malloc(sizeof(mensaje));
-
     // parametros por argv que se le enviarán a los hijos (comparador)
     int x = strlen(nameFile); // cantidad de carácteres del archivo de entrada
     int y = strlen(chain); // cantidad de carácteres de la cadena
@@ -101,19 +132,16 @@ int main(int argc, char** argv){ // argc indica cantidad de argumentos y argv es
     sprintf(nameF, "%d", x); // guardo el num como string
     char nameS[y];
     sprintf(nameS, "%d", y);
-
     mensaje *aviso = (mensaje*)malloc(sizeof(mensaje));
     new->posCursor = 0;
 	for (numProcess = 0; numProcess < qProcesses ; numProcess++){
         new->identificador = numProcess;
         new->lineas = cantidadLineas;
-        new->posCursor = numProcess*(cantidadLineas*count);
+        new->posCursor = numProcess*(cantidadLineas*count); //
         if (qLines % qProcesses != 0 && numProcess == qProcesses-1){
             new->lineas = cantidadLineas + (qLines%qProcesses);
         }
-
         pid = fork();
-
         if (pid > 0) { // padre
             close(pipes[numProcess][LECTURA]);
             write(pipes[numProcess][ESCRITURA], new, sizeof(mensaje)); // escribo en pipe  
@@ -141,15 +169,14 @@ int main(int argc, char** argv){ // argc indica cantidad de argumentos y argv es
     strcat(salida, chain);
     strcat(salida, ".txt");
     FILE* fpout = fopen(salida, "w");
-
     // leo los resultados parciales de los archivos generados por los hijos
     int h = 0; // contador que almacenarara la cantidad de bytes del archivo final
     for (numProcess = 0; numProcess < qProcesses; numProcess++){
         // genero el nombre del archivo de salida del proceso correspondiente para leer  
         int n = sizeof(numProcess)/sizeof(int); // cantidad de digitos del identificador
         int qCaracteres = 8 + y + n; // cantidad de caracteres del archivo de salida 
-        char *entrada = (char*)malloc(sizeof(char)*qCaracteres); // asigno memoria al string que tendrá el nombre del archivo de salida 
-        char *number = (char*)malloc(sizeof(char)*n); // asigno memoria al string que tendrá el identificador del proceso
+        char *entrada = (char*)calloc(qCaracteres, sizeof(char)); // asigno memoria al string que tendrá el nombre del archivo de salida 
+        char *number = (char*)calloc(n, sizeof(char)); // asigno memoria al string que tendrá el identificador del proceso
         sprintf(number, "%d", numProcess);  
         strcat(entrada, "rp_");
         strcat(entrada, chain);
@@ -173,11 +200,11 @@ int main(int argc, char** argv){ // argc indica cantidad de argumentos y argv es
 	}
     fclose(fpout);
     // FLAGS 
+    char* dContenedor = (char*)malloc(sizeof(char)*h);
     if (dflag == 1){
         FILE* fpout = fopen(salida, "r");
-        char* dContenedor = (char*)malloc(sizeof(char)*h);
         fread(dContenedor,sizeof(char),h,fpout);
-        printf("%s\n",dContenedor);
+        printf("El resultado final es\n%s",dContenedor);
         fclose(fpout);
     }
     return 0;
