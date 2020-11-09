@@ -132,6 +132,7 @@ int main(int argc, char** argv){ // argc indica cantidad de argumentos y argv es
     sprintf(nameF, "%d", x); // guardo el num como string
     char nameS[y];
     sprintf(nameS, "%d", y);
+    //mensaje *aviso = (mensaje*)malloc(sizeof(mensaje));
     new->posCursor = 0;
 	for (numProcess = 0; numProcess < qProcesses ; numProcess++){
         new->identificador = numProcess;
@@ -162,10 +163,15 @@ int main(int argc, char** argv){ // argc indica cantidad de argumentos y argv es
 		while ((pid=waitpid(-1,&status,0))!=-1){
 		}
 	}
+    //libero la memoria del mensaje
     free(new);
+    // libero memoria de los pipes
+    for (numProcess = 0; numProcess < qProcesses; numProcess++){
+        free(pipes[numProcess]);
+    }
     free(pipes);
     // genero el nombre de archivo final
-    char* salida = (char*)malloc(sizeof(char)*(y+7));
+    char* salida = (char*)calloc((y+7),sizeof(char));
     strcat(salida, "rc_");
     strcat(salida, chain);
     strcat(salida, ".txt");
@@ -186,7 +192,7 @@ int main(int argc, char** argv){ // argc indica cantidad de argumentos y argv es
         strcat(entrada, ".txt");
         char* contenedor = (char*)calloc((count+6)*cantidadLineas, sizeof(char)); // almacenará la información del archivo que se lee
         FILE* fpin = fopen(entrada, "r");
-        if (qLines % qProcesses != 0 && numProcess == qProcesses-1){
+        if (qLines % qProcesses != 0 && numProcess == qProcesses-1){ // si las lineas no se distribuyeron equitativamente entre los procesos , el archivo del último proceso tiene más lineas por lo que hay que dar más memoria para leer completamente el archivo 
             cantidadLineas = cantidadLineas + (qLines%qProcesses);
             contenedor = (char*)realloc(contenedor,(count+6)*cantidadLineas);
             fread(contenedor,sizeof(char),(count+6)*cantidadLineas,fpin);
@@ -201,6 +207,7 @@ int main(int argc, char** argv){ // argc indica cantidad de argumentos y argv es
         free(entrada);
         free(number);
         free(contenedor);
+        fclose(fpin);
 	}
     fclose(fpout);
     // FLAGS 
