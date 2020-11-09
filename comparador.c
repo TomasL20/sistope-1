@@ -1,18 +1,17 @@
-#include <unistd.h> //Para utilizar fork(), pipes(), entre otros
-#include <stdio.h> //Funciones de entrada y salida como printf
-#include <stdlib.h> //Asignación de memoria, atoi, etc.
+#include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h> 
-#include <sys/wait.h> //Define las constantes simbólicas para usar con waitpid(), wait() por ejemplo
-#include <sys/types.h> //define varios tipos de datos como pid_t
+#include <sys/wait.h>
+#include <sys/types.h>
+#include "mensaje.h"
 
-typedef struct mensaje{
-    int identificador;
-    int lineas;
-    int  posCursor;
-}mensaje;
+// SISTEMAS OPERATIVOS - DIINF USACH - 2/2020
+// PROFESOR : CRISTOBAL ACOSTA
+// AYUDANTE : MARCELA RIVERA
+// AUTORES  : TOMÁS LÓPEZ - CARLOS BARAHONA
 
 int main(int argc, char* argv[]){ 
-    
     // recibo lo que me envió el padre
     mensaje *aviso = (mensaje*)malloc(sizeof(mensaje));
     int x = atoi(argv[1]); // cantidad de caracteres del archivo de entrada
@@ -22,7 +21,6 @@ int main(int argc, char* argv[]){
 	read(STDIN_FILENO, aviso, sizeof(mensaje));
     read(STDIN_FILENO, nombreArchivo, sizeof(char)*x);
     read(STDIN_FILENO, secuencia, sizeof(char)*y);
-
     // genero el nombre del archivo de salida del proceso correspondiente 
     int n = sizeof(aviso->identificador)/sizeof(int); // cantidad de digitos del identificador
     int qCaracteres = 8 + y + n; // cantidad de caracteres del archivo de salida 
@@ -34,11 +32,9 @@ int main(int argc, char* argv[]){
     strcat(salida, "_");
     strcat(salida, number);
     strcat(salida, ".txt");
-
     // abro el archivo a leer
     FILE* fpin = fopen(nombreArchivo, "r"); 
     fseek(fpin, aviso->posCursor, SEEK_SET); // muevo el cursor a donde me corresponde empezar a leer
-
     // creo el archivo de salida 
     FILE* fpout = fopen(salida, "w");
     size_t len = 0;
@@ -48,7 +44,6 @@ int main(int argc, char* argv[]){
     fseek(fpin, -countL, SEEK_CUR); // vuelvo a donde debo empezar a leer 
     countL = countL -1;
     long countS = strlen(secuencia);
-
     // empiezo a buscar y comparar 
     for (int i = 0; i < aviso->lineas; i++){ // lee linea a linea
         fscanf(fpin, "%s", aux);
